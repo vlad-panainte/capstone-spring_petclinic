@@ -69,7 +69,7 @@ pipeline {
             steps {
                 script {
                     echo 'Building docker image'
-                    env.imageVersion = "${env.BRANCH_NAME == 'main' ? env.latestTag : $SHORT_COMMIT}"
+                    env.imageVersion = "${env.BRANCH_NAME == 'main' ? env.latestTag : env.SHORT_COMMIT}"
                     sh 'mvn package -Dmaven.test.skip=true'
                     sh "docker build -t $REPOSITORY_REGION-docker.pkg.dev/$PROJECT_ID/$REPOSITORY_ID/$IMAGE_NAME:${env.imageVersion} ."
                 }
