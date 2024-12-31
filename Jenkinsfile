@@ -1,5 +1,8 @@
 pipeline {
     agent any
+    options {
+        ansiColor('VGA')
+    }
     tools {
         maven 'maven_latest'
         'org.jenkinsci.plugins.docker.commons.tools.DockerTool' 'docker_latest'
