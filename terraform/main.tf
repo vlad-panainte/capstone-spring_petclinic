@@ -225,3 +225,7 @@ resource "kubernetes_service_v1" "spring_petclinic" {
   }
 }
 
+output "gke_load_balancer_ip" {
+  value       = kubernetes_service_v1.spring_petclinic.status[0].load_balancer[0].ingress[0].ip
+  description = "GKE Load Balancer public IP"
+}
