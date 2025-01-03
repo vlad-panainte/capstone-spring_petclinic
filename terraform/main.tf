@@ -11,7 +11,7 @@ terraform {
     }
   }
   backend "gcs" {
-    bucket = "vpanainte-terraform-state-deployment"
+    bucket = "vpanainte-tfstate-deployment"
   }
 }
 
