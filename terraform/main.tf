@@ -127,11 +127,6 @@ resource "kubernetes_deployment_v1" "spring_petclinic" {
               cpu    = "500m"
               memory = "512Mi"
             }
-
-            limits = {
-              cpu    = "750m"
-              memory = "1024Mi"
-            }
           }
 
           liveness_probe {
@@ -155,11 +150,6 @@ resource "kubernetes_deployment_v1" "spring_petclinic" {
             requests = {
               cpu    = "100m"
               memory = "64Mi"
-            }
-
-            limits = {
-              cpu    = "150m"
-              memory = "96Mi"
             }
           }
 
@@ -185,7 +175,34 @@ resource "kubernetes_deployment_v1" "spring_petclinic" {
         }
       }
     }
-    replicas = 2
+  }
+}
+
+resource "kubernetes_horizontal_pod_autoscaler_v2" "spring_petclinic" {
+  metadata {
+    name = "spring-petclinic-horizontal-autoscaler"
+  }
+
+  spec {
+    min_replicas = 1
+    max_replicas = 3
+
+    scale_target_ref {
+      api_version = "apps/v1"
+      kind        = "Deployment"
+      name        = var.gke_deployment_name
+    }
+
+    metric {
+      type = "Resource"
+      resource {
+        name = "cpu"
+        target {
+          type                = "Utilization"
+          average_utilization = "75"
+        }
+      }
+    }
   }
 }
 
@@ -207,3 +224,4 @@ resource "kubernetes_service_v1" "spring_petclinic" {
     type = "LoadBalancer"
   }
 }
+
