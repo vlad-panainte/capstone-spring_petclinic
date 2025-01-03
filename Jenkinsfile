@@ -31,6 +31,7 @@ pipeline {
             }
             steps {
                 echo 'Static code analysis'
+                sh 'rm -rf terraform/.terraform'
                 sh 'mvn checkstyle:checkstyle'
             }
         }
