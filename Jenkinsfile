@@ -31,7 +31,6 @@ pipeline {
             }
             steps {
                 echo 'Static code analysis'
-                sh 'rm -rf terraform/.terraform'
                 sh 'mvn checkstyle:checkstyle'
             }
         }
@@ -83,7 +82,6 @@ pipeline {
                 script {
                     echo 'Building docker image'
                     env.imageVersion = "${env.BRANCH_NAME == 'main' ? env.latestTag : env.SHORT_COMMIT}"
-                    sh 'rm -f target/*.jar'
                     sh 'mvn package -Dmaven.test.skip=true'
                     sh "docker build -t $TF_VAR_region-docker.pkg.dev/$TF_VAR_project_id/$TF_VAR_artifact_repository_id/$IMAGE_NAME:${env.imageVersion} ."
                 }
@@ -118,6 +116,14 @@ pipeline {
                 sh 'cd terraform && terraform init'
                 sh 'terraform -chdir=terraform apply -lock-timeout=10m --auto-approve'
             }
+        }
+    }
+    post {
+        always {
+            cleanWs(cleanWhenNotBuilt: true,
+                    deleteDirs: true,
+                    disableDeferredWipeout: true,
+                    notFailBuild: true)
         }
     }
 }
