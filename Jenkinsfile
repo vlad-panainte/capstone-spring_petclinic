@@ -10,7 +10,7 @@ pipeline {
     environment {
         GCP_SERVICE_ACCOUNT_FILE = credentials('gcp_service_account')
         SHORT_COMMIT = "${GIT_COMMIT[0..7]}"
-        PROJECT_ID = 'gd-gcp-internship-devops'
+        PROJECT_ID = 'gd-gcp-gridu-devops-t1-t2'
         REPOSITORY_REGION = 'europe-central2'
         REPOSITORY_ID = 'vpanainte-spring-petclinic'
         IMAGE_NAME = 'spring-petclinic'
