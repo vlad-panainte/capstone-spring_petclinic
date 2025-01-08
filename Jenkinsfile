@@ -1,16 +1,28 @@
 pipeline {
     agent any
+    options {
+        ansiColor('VGA')
+    }
     tools {
         maven 'maven_latest'
         'org.jenkinsci.plugins.docker.commons.tools.DockerTool' 'docker_latest'
     }
     environment {
-        GCP_SERVICE_ACCOUNT_FILE = credentials('gcp_service_account')
+        GOOGLE_APPLICATION_CREDENTIALS = credentials('gcp_service_account')
+        SQL_CREDENTIALS = credentials('sql_credentials')
         SHORT_COMMIT = "${GIT_COMMIT[0..7]}"
-        PROJECT_ID = 'gd-gcp-internship-devops'
-        REPOSITORY_REGION = 'europe-central2'
         REPOSITORY_ID = 'vpanainte-spring-petclinic'
         IMAGE_NAME = 'spring-petclinic'
+        TF_VAR_project_id = 'gd-gcp-gridu-devops-t1-t2'
+        TF_VAR_region = 'europe-central2'
+        TF_VAR_zone = 'europe-central2-a'
+        TF_VAR_gke_name = 'vpanainte-cluster'
+        TF_VAR_gke_deployment_name = 'vpanainte-spring-petclinic'
+        TF_VAR_gke_deployment_secret_service_account = credentials('gcp_service_account')
+        TF_VAR_artifact_repository_id = 'vpanainte-spring-petclinic'
+        TF_VAR_sql_database_name = 'vpanainte-mysql'
+        TF_VAR_sql_user_name = "$SQL_CREDENTIALS_USR"
+        TF_VAR_sql_user_password = "$SQL_CREDENTIALS_PSW"
     }
     stages {
         stage('StaticCodeAnalysis') {
@@ -39,7 +51,7 @@ pipeline {
             }
             steps {
                 echo 'Package build'
-                sh 'mvn package -Dmaven.test.skip=true'
+                sh 'mvn clean package -Dmaven.test.skip=true'
             }
         }
 
@@ -71,7 +83,7 @@ pipeline {
                     echo 'Building docker image'
                     env.imageVersion = "${env.BRANCH_NAME == 'main' ? env.latestTag : env.SHORT_COMMIT}"
                     sh 'mvn package -Dmaven.test.skip=true'
-                    sh "docker build -t $REPOSITORY_REGION-docker.pkg.dev/$PROJECT_ID/$REPOSITORY_ID/$IMAGE_NAME:${env.imageVersion} ."
+                    sh "docker build -t $TF_VAR_region-docker.pkg.dev/$TF_VAR_project_id/$TF_VAR_artifact_repository_id/$IMAGE_NAME:${env.imageVersion} ."
                 }
             }
         }
@@ -85,9 +97,9 @@ pipeline {
             }
             steps {
                 echo 'Uploading docker image to Google Artifact Registry'
-                sh 'gcloud auth activate-service-account --key-file=$GCP_SERVICE_ACCOUNT_FILE'
-                sh "gcloud auth configure-docker $REPOSITORY_REGION-docker.pkg.dev --quiet"
-                sh "docker push $REPOSITORY_REGION-docker.pkg.dev/$PROJECT_ID/$REPOSITORY_ID/$IMAGE_NAME:${env.imageVersion}"
+                sh 'gcloud auth activate-service-account --key-file=$GOOGLE_APPLICATION_CREDENTIALS'
+                sh "gcloud auth configure-docker $TF_VAR_region-docker.pkg.dev --quiet"
+                sh "docker push $TF_VAR_region-docker.pkg.dev/$TF_VAR_project_id/$TF_VAR_artifact_repository_id/$IMAGE_NAME:${env.imageVersion}"
             }
         }
 
@@ -95,10 +107,23 @@ pipeline {
             when {
                 branch 'main'
             }
+            environment {
+                TF_VAR_image_name = "spring-petclinic:${env.imageVersion}"
+            }
             steps {
                 echo 'Attempting to deploy docker image to Google Kubernetes Engine cluster'
                 input message: 'Should we deploy the current docker image?', ok: 'Yes'
+                sh 'cd terraform && terraform init'
+                sh 'terraform -chdir=terraform apply -lock-timeout=10m --auto-approve'
             }
+        }
+    }
+    post {
+        always {
+            cleanWs(cleanWhenNotBuilt: true,
+                    deleteDirs: true,
+                    disableDeferredWipeout: true,
+                    notFailBuild: true)
         }
     }
 }
