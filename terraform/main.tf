@@ -124,7 +124,7 @@ resource "kubernetes_deployment_v1" "spring_petclinic" {
 
           resources {
             requests = {
-              cpu    = "500m"
+              cpu    = "700m"
               memory = "512Mi"
             }
           }
@@ -149,7 +149,7 @@ resource "kubernetes_deployment_v1" "spring_petclinic" {
           resources {
             requests = {
               cpu    = "100m"
-              memory = "64Mi"
+              memory = "48Mi"
             }
           }
 
